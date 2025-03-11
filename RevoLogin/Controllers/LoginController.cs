@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using PuppeteerSharp;
@@ -10,6 +11,7 @@ namespace RevoLogin.Controllers
 {
     [ApiController]
     [Route("[controller]")]
+    [EnableCors("AllowSpecificOrigin")]
     public class LoginController : ControllerBase
     {
         private readonly ILogger<LoginController> _logger;
@@ -121,7 +123,7 @@ namespace RevoLogin.Controllers
 
     public class LoginRequest
     {
-        public string Username { get; set; }
-        public string Password { get; set; }
+        public required string Username { get; set; }
+        public required string Password { get; set; }
     }
 }
