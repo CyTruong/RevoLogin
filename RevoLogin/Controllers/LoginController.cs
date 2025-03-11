@@ -18,6 +18,12 @@ namespace RevoLogin.Controllers
             _logger = logger;
         }
 
+        [HttpGet("test")]
+        public IActionResult Get() // Change return type to IActionResult
+        {
+            return Ok("Test ok");
+        }
+
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
