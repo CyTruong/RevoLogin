@@ -1,0 +1,6 @@
+@RevoLogin_HostAddress = http://localhost:5201
+
+GET {{RevoLogin_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
