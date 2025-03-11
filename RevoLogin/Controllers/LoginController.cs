@@ -26,6 +26,31 @@ namespace RevoLogin.Controllers
             try
             {
                 var cookiesJson = await PerformLogin(request.Username, request.Password);
+                if (string.IsNullOrEmpty(cookiesJson))
+                {
+                    return StatusCode(500, new { error = "Wrong username or password" });
+                }
+                return Ok(cookiesJson);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred during login.");
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        [HttpGet("login2")]
+        public async Task<IActionResult> Login2([FromQuery] string username, [FromQuery] string password)
+        {
+            _logger.LogInformation($"Username: {username}, Password: {password}");
+
+            try
+            {
+                var cookiesJson = await PerformLogin(username, password);
+                if (string.IsNullOrEmpty(cookiesJson))
+                {
+                    return StatusCode(500, new { error = "Wrong username or password" });
+                }
                 return Ok(cookiesJson);
             }
             catch (Exception ex)
@@ -40,12 +65,12 @@ namespace RevoLogin.Controllers
             try
             {
                 var browserFetcher = new BrowserFetcher();
-                var revisionInfo = await browserFetcher.DownloadAsync(); // Removed DefaultRevision
-                var executablePath = revisionInfo.GetExecutablePath(); // Use the method to get the executable path
+                var revisionInfo = await browserFetcher.DownloadAsync();
+                var executablePath = revisionInfo.GetExecutablePath();
                 var browser = await Puppeteer.LaunchAsync(new LaunchOptions
                 {
                     Headless = true,
-                    ExecutablePath = executablePath // Use the downloaded browser's executable path
+                    ExecutablePath = executablePath
                 });
 
                 var page = await browser.NewPageAsync();
@@ -64,15 +89,19 @@ namespace RevoLogin.Controllers
                     await buttons[1].ClickAsync();
                 }
 
-                await page.WaitForNavigationAsync();
-                var cookies = await page.GetCookiesAsync();
-
-                // Convert cookies to JSON string
-                var cookiesJson = JsonSerializer.Serialize(cookies);
-
-                await browser.CloseAsync();
-
-                return cookiesJson;
+                var navigationTask = page.WaitForNavigationAsync();
+                if (await Task.WhenAny(navigationTask, Task.Delay(10000)) == navigationTask)
+                {
+                    var cookies = await page.GetCookiesAsync();
+                    var cookiesJson = JsonSerializer.Serialize(cookies);
+                    await browser.CloseAsync();
+                    return cookiesJson;
+                }
+                else
+                {
+                    await browser.CloseAsync();
+                    return string.Empty;
+                }
             }
             catch (Exception ex)
             {
