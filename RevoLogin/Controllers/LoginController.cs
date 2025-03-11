@@ -23,47 +23,62 @@ namespace RevoLogin.Controllers
         {
             _logger.LogInformation($"Username: {request.Username}, Password: {request.Password}");
 
-            var cookiesJson = await PerformLogin(request.Username, request.Password);
-
-            return Ok(cookiesJson);
+            try
+            {
+                var cookiesJson = await PerformLogin(request.Username, request.Password);
+                return Ok(cookiesJson);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred during login.");
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         private async Task<string> PerformLogin(string username, string password)
         {
-            var browserFetcher = new BrowserFetcher();
-            var revisionInfo = await browserFetcher.DownloadAsync(); // Removed DefaultRevision
-            var executablePath = revisionInfo.GetExecutablePath(); // Use the method to get the executable path
-            var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+            try
             {
-                Headless = true,
-                ExecutablePath = executablePath // Use the downloaded browser's executable path
-            });
+                var browserFetcher = new BrowserFetcher();
+                var revisionInfo = await browserFetcher.DownloadAsync(); // Removed DefaultRevision
+                var executablePath = revisionInfo.GetExecutablePath(); // Use the method to get the executable path
+                var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+                {
+                    Headless = true,
+                    ExecutablePath = executablePath // Use the downloaded browser's executable path
+                });
 
-            var page = await browser.NewPageAsync();
-            await page.GoToAsync("https://evobuild.ai/n8n/signin", WaitUntilNavigation.Networkidle0);
+                var page = await browser.NewPageAsync();
+                await page.GoToAsync("https://evobuild.ai/n8n/signin", WaitUntilNavigation.Networkidle0);
 
-            var input = await page.QuerySelectorAllAsync("input");
-            if (input.Length > 0)
-            {
-                await input[0].TypeAsync(username);
-                await input[1].TypeAsync(password);
+                var input = await page.QuerySelectorAllAsync("input");
+                if (input.Length > 0)
+                {
+                    await input[0].TypeAsync(username);
+                    await input[1].TypeAsync(password);
+                }
+
+                var buttons = await page.QuerySelectorAllAsync("button");
+                if (buttons.Length > 0)
+                {
+                    await buttons[1].ClickAsync();
+                }
+
+                await page.WaitForNavigationAsync();
+                var cookies = await page.GetCookiesAsync();
+
+                // Convert cookies to JSON string
+                var cookiesJson = JsonSerializer.Serialize(cookies);
+
+                await browser.CloseAsync();
+
+                return cookiesJson;
             }
-
-            var buttons = await page.QuerySelectorAllAsync("button");
-            if (buttons.Length > 0)
+            catch (Exception ex)
             {
-                await buttons[1].ClickAsync();
+                _logger.LogError(ex, "An error occurred while performing login.");
+                throw;
             }
-
-            await page.WaitForNavigationAsync();
-            var cookies = await page.GetCookiesAsync();
-
-            // Convert cookies to JSON string
-            var cookiesJson = JsonSerializer.Serialize(cookies);
-
-            await browser.CloseAsync();
-
-            return cookiesJson;
         }
     }
 
