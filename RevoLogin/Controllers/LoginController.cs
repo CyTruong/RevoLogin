@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using PuppeteerSharp;
+using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -99,6 +100,8 @@ namespace RevoLogin.Controllers
                 {
                     var cookies = await page.GetCookiesAsync();
                     var cookiesJson = JsonSerializer.Serialize(cookies);
+
+                    await page.DeleteCookieAsync(cookies.ToArray()); // Clear all cookies
                     await browser.CloseAsync();
                     return cookiesJson;
                 }
