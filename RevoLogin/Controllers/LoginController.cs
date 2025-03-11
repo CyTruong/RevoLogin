@@ -70,9 +70,8 @@ namespace RevoLogin.Controllers
         {
             try
             {
-                var browserFetcher = new BrowserFetcher();
-                var revisionInfo = await browserFetcher.DownloadAsync();
-                var executablePath = revisionInfo.GetExecutablePath();
+                var executablePath = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+                _logger.LogInformation($"Executable path: {executablePath}");
                 var browser = await Puppeteer.LaunchAsync(new LaunchOptions
                 {
                     Headless = true,
